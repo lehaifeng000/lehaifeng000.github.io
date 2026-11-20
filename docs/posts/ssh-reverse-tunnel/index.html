@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用反向 SSH 隧道连到没有公网地址的目标主机；迁移版补上默认不对公网开放的说明。">
+  <title>ssh反向隧道实现内网穿透 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2020-10-18">2020.10.18</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">网络与运维</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">ssh反向隧道实现内网穿透</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#section-1">为什么需要内网穿透</a></li>
+              <li><a href="#section-2">实现原理</a></li>
+              <li><a href="#section-3">内网穿透工具</a></li>
+              <li><a href="#section-4">目前机器状况</a></li>
+              <li><a href="#section-5">使用流程</a></li>
+              <li><a href="#section-6">补充：长期保持连接</a></li>
+              <li><a href="#source">知乎原文</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+<p>2020-10-18 第一次在知乎写文章，有写得不好的地方请见谅哈~</p>
+<h2 id="section-1">为什么需要内网穿透</h2>
+<p>当我们有一台性能较好的计算机（比如服务器、图形工作站等），但是这台计算机是在一个内网中（公司、学校或家庭内网），由于其没有公网 IP 地址，不在同一个内网的其它电脑未必能直接连接到它，内网穿透可以解决这个问题。</p>
+<figure><img src="figure-01.jpg" loading="lazy" decoding="async" width="1138" height="358" alt="原文自绘：内网主机不能被外部直接连接"><figcaption>原文自绘：内网主机不能被外部直接连接</figcaption></figure>
+<h2 id="section-2">实现原理</h2>
+<p>利用一台有公网 IP 地址的服务器进行请求转发，这台服务器起到“桥梁”的作用。</p>
+<figure><img src="figure-02.jpg" loading="lazy" decoding="async" width="1110" height="684" alt="原文自绘：用一台中转服务器建立连接。示意图里的中转服务器标为 C，下文命令和表格把中转服务器标为 B。"><figcaption>原文自绘：用一台中转服务器建立连接。示意图里的中转服务器标为 C，下文命令和表格把中转服务器标为 B。</figcaption></figure>
+<h2 id="section-3">内网穿透工具</h2>
+<p>原文列举了 ngrok、frp 和远程桌面工具。这里使用一种较为简单的方法：SSH 反向隧道。</p>
+<h2 id="section-4">目前机器状况</h2>
+<p>迁移版用文档示例地址替换原文 IP。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="示例机器">
+<table>
+<thead><tr><th scope="col">机器编号</th><th scope="col">IP</th><th scope="col">用户名</th><th scope="col">描述</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>10.10.32.2</td><td>user_A</td><td>目标服务器，在内网中</td></tr>
+<tr><td>B</td><td>203.0.113.10</td><td>user_B</td><td>转发连接的服务器</td></tr>
+<tr><td>C</td><td>192.168.1.6</td><td>user_C</td><td>装有 SSH 客户端的计算机</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="section-5">使用流程</h2>
+<p class="post-note">旧版示例曾把转发端口对外公开。这版保留同样的反向隧道原理，但把 6666 绑定到 B 的回环地址，再通过有授权的 SSH 登录连接；不需要对公网放行 6666，也不要启用全局的 <code>GatewayPorts yes</code>。</p>
+<p>计算机 A 向计算机 B 发起 SSH 请求，建立反向通道。在 A 上执行，并按提示完成 B 的登录：</p>
+<pre><code>ssh -NT -o ExitOnForwardFailure=yes -R 127.0.0.1:6666:localhost:22 user_B@203.0.113.10</code></pre>
+<p>这条命令将 B 回环地址的 6666 端口连接到 A 的 22 端口。在 C 上，先登录 B，再从 B 通过 6666 连接 A：</p>
+<pre><code># 在 C 上
+ssh user_B@203.0.113.10
+# 在 B 上
+ssh -p 6666 user_A@127.0.0.1</code></pre>
+<h2 id="section-6">补充：长期保持连接</h2>
+<p>原文试过 autossh，也写过一个 shell 循环。但仅检查本机 22 端口是否在监听，不能判断反向隧道是否还在线。要维持长期连接，应让 SSH 在连接失效或无法绑定端口时退出，再由 autossh 或进程管理器重启。初次验证时先以前台命令观察错误。</p>
+<p>还有其它的像配置 SSH 密钥、使用 SSH config 等，可以参考<a href="../remote-development/index.html">远程部署笔记</a>。</p>
+<p class="migration-source" id="source">本文首次发布于知乎，<a href="https://zhuanlan.zhihu.com/p/266522925">查看知乎原文</a>。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>

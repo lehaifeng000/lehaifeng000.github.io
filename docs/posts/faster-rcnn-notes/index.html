@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="读 Faster R-CNN 时对 RPN、候选区域筛选和检测头的整理，以及复现使用的仓库。">
+  <title>faster rcnn笔记 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2021-03-09">2021.03.09</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">机器学习</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">faster rcnn笔记</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#section-1">Faster R-CNN 主要流程</a></li>
+              <li><a href="#section-2">几个知识点</a></li>
+              <li><a href="#section-3">复现实验</a></li>
+              <li><a href="#source">知乎原文</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+<p class="post-note">这篇是阅读笔记。原文标注了借用的文字和图片；迁移版用自己的话整理流程，不转载第三方配图，保留<a href="https://zhuanlan.zhihu.com/p/31426458">《一文读懂 Faster RCNN》</a>等参考链接。</p>
+<p><i>写笔记时，torchvision 的 ops 中已有 RoI Pool、RoI Align 和 NMS 等方法。</i></p>
+<p>常见的 backbone 可以用 ResNet-50 或 VGG16。原文笔记还提到 ZFNet，以及 torchvision 中的 ResNet 和 MobileNet。</p>
+<h2 id="section-1">Faster R-CNN 主要流程</h2>
+<ol>
+<li>先用 backbone 从图像中提取特征图。</li>
+<li>在特征图上设定 anchors。RPN 预测每个 anchor 的前景得分和位置偏移，再筛选候选框。</li>
+<li>用 RoI Pooling 将候选区域转换为固定尺寸的特征，交给检测头分类和回归。</li>
+</ol>
+<p>看倒是看完了，但感觉内容好多笔记不想写了，简单记几个知识点吧，放过我自己 0_0。</p>
+<h2 id="section-2">几个知识点</h2>
+<h3>ProposalCreator</h3>
+<p>把 RPN 预测的偏移应用到预设 anchors，得到新的候选框。裁剪边界、按得分初筛，再执行非极大值抑制，把数千个候选框压到数百个。</p>
+<h3>非极大值抑制</h3>
+<p>每轮保留得分最高的框，移除与它重叠超过阈值的框；对剩下的框重复这个过程。</p>
+<h3>AnchorTargetCreator</h3>
+<p>用真实框匹配 anchors，为 RPN 分配训练标签，并计算边框回归的目标偏移。</p>
+<h3>ProposalTargetCreator</h3>
+<p>按候选框与真实框的 IoU 选择正负样本，用来训练第二阶段检测头。不同实现的采样和难例选择策略可能不同。</p>
+<h3>RoI Pooling 和检测头</h3>
+<p>原笔记举了 ResNet-50 的例子：池化后的区域特征经过后续层和全局平均池化，送入分类和回归分支。</p>
+<h2 id="section-3">复现实验</h2>
+<p>当时用<a href="https://github.com/bubbliiiing/faster-rcnn-pytorch">一个基于 PyTorch 1.2 的实现</a>跑过实验，后来又用 torchvision 的实现整理了<a href="https://github.com/lehaifeng000/faster_rcnn_pytorch">自己的实验仓库</a>。</p>
+<p>另见<a href="https://zhuanlan.zhihu.com/p/92942557">原笔记中的实现参考</a>。</p>
+<p class="migration-source" id="source">本文首次发布于知乎，<a href="https://zhuanlan.zhihu.com/p/355755685">查看知乎原文</a>。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>

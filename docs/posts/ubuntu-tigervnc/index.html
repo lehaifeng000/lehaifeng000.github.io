@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="在 Ubuntu 20.04 上用 TigerVNC 和 GNOME Flashback 启动独立虚拟桌面。">
+  <title>Ubuntu远程桌面-虚拟桌面 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2023-08-15">2023.08.15</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">网络与运维</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">Ubuntu远程桌面-虚拟桌面</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#section-1">apt安装</a></li>
+              <li><a href="#section-2">配置连接</a></li>
+              <li><a href="#section-3">启动连接</a></li>
+              <li><a href="#section-4">客户端连接</a></li>
+              <li><a href="#section-5">总结</a></li>
+              <li><a href="#source">知乎原文</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+<blockquote>团队服务器是Ubuntu系统的，系统版本是Ubuntu20.04，有远程桌面连接的需求，习惯了gnome不想换Xfce，远程工具用的是tigervnc，记录一下</blockquote>
+<p class="post-note">本文是 Ubuntu 20.04 的历史配置记录。示例里的 VNC 端口只应给可信网络使用；需要跨网连接时，优先用 VPN 或 SSH 隧道，不要把 VNC 直接暴露到公网。</p>
+<h2 id="section-1">apt安装</h2>
+<p>先安装lightdm，ubuntu20自带的gdm3好像不太支持多桌面登录。</p>
+<pre><code>sudo apt update
+sudo apt install lightdm</code></pre>
+<p>安装完会让选择，选择lightdm。</p>
+<p>安装gnome-session-flashback和tigervnc服务器程序：</p>
+<pre><code>sudo apt-get install gnome-session-flashback
+sudo apt-get install tigervnc-standalone-server</code></pre>
+<h2 id="section-2">配置连接</h2>
+<ol>
+<li>执行 <code>vncpasswd</code>，设置连接密码。</li>
+<li>先执行一次 <code>vncserver</code> 命令，初始化 <code>~/.vnc</code> 文件夹，然后用 <code>vncserver -kill :编号</code> 关掉。</li>
+<li>编辑 <code>~/.vnc/xstartup</code>，填入下面的代码。</li>
+</ol>
+<pre><code>#!/bin/sh
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+export XKL_XMODMAP_DISABLE=1
+export XDG_CURRENT_DESKTOP="GNOME-Flashback:GNOME"
+export XDG_MENU_PREFIX="gnome-flashback-"
+[ -x /etc/vnc/xstartup ] &amp;&amp; exec /etc/vnc/xstartup
+[ -r $HOME/.Xresources ] &amp;&amp; xrdb $HOME/.Xresources
+xsetroot -solid grey #设置背景色
+vncconfig -iconic &amp; #
+gnome-terminal &amp; #连接后会直接打开一个terminal窗口
+nautilus &amp; #连接后会直接打开一个文件窗口
+gnome-session --session=gnome-flashback-metacity --disable-acceleration-check &amp;</code></pre>
+<h2 id="section-3">启动连接</h2>
+<p>TigerVNC 从 5901 开始用，可以多开几个端口，这里只开一个。如果由可信局域网直接连接，只在防火墙放行授权来源，例如：</p>
+<pre><code>sudo ufw allow from 192.168.1.0/24 to any port 5901 proto tcp</code></pre>
+<p>这里的 <code>:1</code> 指的是连接 1，用的端口就是 5901，<code>-localhost no</code> 允许局域网内的其他主机连接。</p>
+<pre><code>vncserver :1 -localhost no</code></pre>
+<h2 id="section-4">客户端连接</h2>
+<ul>
+<li><a href="https://sourceforge.net/projects/tigervnc/files/stable/1.13.0/">TigerVNC 1.13.0 官方安装包</a></li>
+<li><a href="https://github.com/lehaifeng000/tools/releases/download/1.0/vncviewer64-1.13.0.exe">原文 Windows 安装包</a></li>
+<li><a href="https://github.com/lehaifeng000/tools/releases/download/1.0/TigerVNC-1.13.0.dmg">原文 macOS 安装包</a></li>
+<li><a href="https://github.com/lehaifeng000/tools/releases/download/1.0/xtigervncviewer_1.13.0-1ubuntu1_amd64.deb">原文 Ubuntu 20.04 安装包</a></li>
+</ul>
+<ol>
+<li>打开安装的tigervnc客户端，输入服务器 IP:端口号，例如 <code>192.168.1.100:5901</code>。</li>
+<li>点击连接，输入密码，即可连接上服务器桌面。</li>
+</ol>
+<h2 id="section-5">总结</h2>
+<p>使用到了一些命令，记录在这。</p>
+<pre><code># 设置vnc连接密码
+vncpasswd
+# 启动vncserver虚拟窗口，其中:1可以改为:2、:3，端口依次对应5902、5903
+vncserver :1 -localhost no
+# 列出目前的窗口列表
+vncserver -list
+# 关闭某个vnc虚拟桌面，:1代表编号为1的桌面
+vncserver -kill :1</code></pre>
+<p class="migration-source" id="source">本文首次发布于知乎，<a href="https://zhuanlan.zhihu.com/p/649969248">查看知乎原文</a>。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>

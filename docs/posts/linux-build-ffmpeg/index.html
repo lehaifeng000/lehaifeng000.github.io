@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="记录从源码编译 Yasm 和 FFmpeg 4.4.1，以及自定义安装路径时的环境变量。">
+  <title>linux安装ffmpeg | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2022-01-25">2022.01.25</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">Linux</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">linux安装ffmpeg</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#section-1">1. 安装yasm</a></li>
+              <li><a href="#section-2">2. 安装ffmpeg</a></li>
+              <li><a href="#source">知乎原文</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+<blockquote>作用：一般用ffmpeg命令来处理音频和视频，比如转码、裁剪等</blockquote>
+<p class="post-note">这是 FFmpeg 4.4.1 的历史编译记录，不是新版的依赖清单。下面的版本号保留原文所用版本。</p>
+<h2 id="section-1">1. 安装yasm</h2>
+<p>安装ffmpeg之前需要先安装yasm。下载yasm源码包，解压并进入解压后的文件夹：</p>
+<pre><code>wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
+tar zxvf yasm-1.3.0.tar.gz
+cd yasm-1.3.0</code></pre>
+<p>编译安装（按安装目录所需权限执行）。</p>
+<pre><code>./configure         # 加 --prefix=/xxx/yasm 可以指定安装目录
+make                # 加 -j8 表示并行8路编译
+make install</code></pre>
+<p>如果指定了安装路径，需要指定路径以便ffmpeg找到。</p>
+<pre><code>export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/xxx/yasm/lib
+export PATH=$PATH:/xxx/yasm/bin</code></pre>
+<h2 id="section-2">2. 安装ffmpeg</h2>
+<p>下载ffmpeg源码包，解压并进入解压后的文件夹：</p>
+<pre><code>wget https://www.ffmpeg.org/releases/ffmpeg-4.4.1.tar.gz
+tar zxvf ffmpeg-4.4.1.tar.gz
+cd ffmpeg-4.4.1</code></pre>
+<p>编译安装：</p>
+<pre><code>./configure   # 加 --prefix=/xxx/ffmpeg 可指定安装目录；--enable-shared 编译动态库
+make
+make install</code></pre>
+<p>原文在搭配 OpenCV 时开启了动态库。配置环境变量，以便使用ffmpeg命令和其它应用找到：</p>
+<pre><code>export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/xxx/ffmpeg/lib
+export PATH=$PATH:/xxx/ffmpeg/bin
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/xxx/ffmpeg/lib/pkgconfig</code></pre>
+<p><i>如果opencv安装时无法开启ffmpeg，检查PKG_CONFIG_PATH路径是否正确</i></p>
+<p class="migration-source" id="source">本文首次发布于知乎，<a href="https://zhuanlan.zhihu.com/p/461818410">查看知乎原文</a>。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>

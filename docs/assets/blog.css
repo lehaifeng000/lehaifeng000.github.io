@@ -65,7 +65,7 @@ img { max-width: 100%; display: block; }
 
 .post-top { padding-block: 2rem 1.65rem; max-width: 53rem; }
 .breadcrumb { display: inline-block; font-size: .9rem; margin-bottom: 1rem; }
-.post-top h1 { font-size: 2.55rem; line-height: 1.4; margin-top: .5rem; text-wrap: balance; }
+.post-top h1 { font-size: 2.55rem; line-height: 1.4; margin-top: .5rem; text-wrap: balance; overflow-wrap: anywhere; }
 .reading-grid { display: grid; align-items: start; grid-template-columns: minmax(0, 49rem) minmax(0, 15rem); gap: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
 .prose { min-width: 0; font-size: 1.06rem; line-height: 1.95; overflow-wrap: anywhere; }
 .prose p, .prose figure, .prose ul, .prose ol { margin-bottom: 1.15rem; }
@@ -74,8 +74,21 @@ img { max-width: 100%; display: block; }
 .prose ul, .prose ol { padding-left: 1.5em; }
 .prose li + li { margin-top: .25rem; }
 .prose code { font: .9em Consolas, monospace; border-radius: 4px; padding: .14em .3em; background: var(--surface); }
+.migrated-prose h3 { margin: 1.35rem 0 .5rem; font-size: 1.15rem; line-height: 1.45; }
+.migrated-prose blockquote, .post-note { margin: 0 0 1.15rem; padding: .55rem .9rem; border-left: 3px solid var(--line); color: var(--muted); background: var(--surface); }
+.migrated-prose pre, .table-scroll { max-width: 100%; margin: 0 0 1.15rem; overflow-x: auto; }
+.migrated-prose pre { padding: .8rem 1rem; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); line-height: 1.6; }
+.migrated-prose pre code { padding: 0; background: transparent; }
+.migrated-prose table { min-width: 29rem; border-collapse: collapse; }
+.migrated-prose th, .migrated-prose td { padding: .4rem .65rem; border: 1px solid var(--line); text-align: left; }
+.migrated-prose th { background: var(--surface); }
+.migrated-prose .figure-source { color: var(--muted); font-size: .9rem; }
+.migrated-prose .migration-source { padding-top: .85rem; border-top: 1px solid var(--line); }
 .prose figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.migrated-prose figure img { width: auto; }
 .prose figcaption { margin-top: .55rem; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+.migrated-prose .sync-flow { padding: .8rem 1rem; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.migrated-prose .sync-flow ol { margin-bottom: 0; }
 .toc { position: sticky; top: 1.5rem; grid-row: 1; grid-column: 2; padding-left: 1rem; border-left: 1px solid var(--line); font-size: .92rem; }
 .toc summary { font-weight: 700; cursor: pointer; }
 .toc ol { list-style: none; padding: 0; margin-top: .65rem; }

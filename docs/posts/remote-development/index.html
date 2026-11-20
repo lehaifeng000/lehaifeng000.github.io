@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用 VS Code Remote-SSH 或 PyCharm 的 SSH Interpreter 把编写、调试和运行放到合适的机器上。">
+  <title>远程部署：在Windows/Mac/Ubuntu上写程序，运行在服务器上 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2020-10-20">2020.10.20</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">开发工具</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">远程部署：在Windows/Mac/Ubuntu上写程序，运行在服务器上</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#section-1">环境准备</a></li>
+              <li><a href="#section-2">方法一：VS Code + Remote 插件</a></li>
+              <li><a href="#section-3">方法二：PyCharm 专业版使用 Deployment</a></li>
+              <li><a href="#source">知乎原文</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+<p>在学习深度学习的时候，我们所找到的开源项目一般都是linux环境下运行的，且一般都需要计算机的性能较高。但直接在linux机器写代码和调试又不太方便，且高性能计算机可能属于多个人共用。这时候在windows下写程序+部署到服务器上运行是一个好的解决办法，但每次修改程序后都需要手动同步到服务器上，且使用命令行调试需要较好的编程基础。</p>
+<p>在这里整理两个在自己电脑上写程序，让程序在服务器上运行的小技巧。(这里以python为例)</p>
+<p class="post-note">这是 2020 年的历史笔记。界面、版本与授权以现在实际安装的版本为准；部分包含机器信息的原截图用示例替代。</p>
+<h2 id="section-1">环境准备</h2>
+<p>Ubuntu 或 Mac 下默认有 SSH。原文在 Windows 下先用了 WSL，后来改用 Git 客户端附带的 Git Bash 来执行命令和编辑配置。</p>
+<p>Windows 进入 <a href="https://git-scm.com/download/win">Git 官网</a>下载安装，装完后桌面右键会有 Git 选项。</p>
+<figure><img src="figure-01.jpg" loading="lazy" decoding="async" width="375" height="469" alt="桌面菜单中的 Git Bash"><figcaption>桌面菜单中的 Git Bash</figcaption></figure>
+<h3>SSH 生成密钥、创建 config 配置文件</h3>
+<p>Windows 在桌面右键打开 Git Bash Here，Mac 或 Ubuntu 打开终端。输入：</p>
+<pre><code>ssh-keygen</code></pre>
+<p>按提示选择生成的位置和口令。进入 <code>.ssh</code> 目录（Windows 是 <code>C:\Users\你的用户名\.ssh</code>，Mac 和 Ubuntu 是 <code>~/.ssh</code>），创建没有后缀的 <code>config</code>。下面用文档示例地址替换原截图中的信息：</p>
+<pre><code>Host 903
+    HostName 192.0.2.10
+    User example-user</code></pre>
+<p>使用命令将本地公钥复制到服务器（服务器需先开启 SSH 服务）：</p>
+<pre><code>ssh-copy-id -i id_rsa.pub 903</code></pre>
+<p>这里需要将 903 换成你的自定义服务器名称；<code>id_rsa.pub</code> 换成刚生成的公钥文件。第一次连接先核对主机指纹，再继续，随后按提示使用服务器账号完成认证。</p>
+<p>准备工作完成，接下来开始配置环境（默认已有一台 Linux 服务器且已安装好 Python 环境）。如果没有正常添加 SSH key，可按管理员要求将<strong>公钥</strong>加到服务器的 <code>~/.ssh/authorized_keys</code>，不要复制私钥。</p>
+<h2 id="section-2">方法一：VS Code + Remote 插件</h2>
+<p>在 Windows 上通过浏览器下载并安装 <a href="https://code.visualstudio.com/">VS Code</a>。</p>
+<p>点击左侧扩展按钮，搜索 SSH，安装 Remote-SSH。原版本重启后会出现远程登录插件的小标。</p>
+<figure><img src="figure-02.jpg" loading="lazy" decoding="async" width="266" height="432" alt="打开 VS Code 扩展面板"><figcaption>打开 VS Code 扩展面板</figcaption></figure>
+<figure><img src="figure-03.jpg" loading="lazy" decoding="async" width="401" height="428" alt="搜索并安装 Remote-SSH 扩展"><figcaption>搜索并安装 Remote-SSH 扩展</figcaption></figure>
+<p>点击设置按钮，选中刚才配置的 config 文件作为配置文件，左侧即可出现自定义的服务器名称，点击右侧的小按钮即可连接到服务器。第一次登录选择平台，选 Linux。</p>
+<figure><img src="figure-04.jpg" loading="lazy" decoding="async" width="417" height="203" alt="在 Remote Explorer 中连接 SSH 目标"><figcaption>在 Remote Explorer 中连接 SSH 目标</figcaption></figure>
+<figure><img src="figure-05.jpg" loading="lazy" decoding="async" width="1278" height="247" alt="第一次连接时选择远端平台"><figcaption>第一次连接时选择远端平台</figcaption></figure>
+<p>连接后，点击 Open Folder，打开的是服务器上的文件夹。</p>
+<p>接下来就和 VS Code 在本地使用一样，安装 Python 插件，写程序、运行、调试等等，这里不再详细说明。Mac 和 Ubuntu 上的流程类似。</p>
+<h2 id="section-3">方法二：PyCharm 专业版使用 Deployment</h2>
+<p>原文使用的是当时的 PyCharm 专业版。关于学生和教师的授权，可参见<a href="https://zhuanlan.zhihu.com/p/163521228">原文引用的教程</a>，实际以 JetBrains 的条款为准。</p>
+<p>使用 PyCharm 新建项目，Interpreter 选 Existing interpreter，点击右边的三个小点。</p>
+<p>选中 SSH Interpreter，Host 填服务器地址，Username 填登录用户名。第一次连接时先核对主机指纹。</p>
+<p>这里选择 Python 解释器的路径。如果使用 Anaconda 安装好了深度学习环境，可以从默认的 <code>/usr/bin/python</code> 改到环境里的 Python，例如 <code>/home/example-user/anaconda3/envs/py36/bin/python</code>。Remote project location 代表程序在服务器上的存放位置，可自行修改，点击 Create 创建项目。</p>
+<p>确认右下角解释器已经指向服务器。写好程序后，使用 Tools-&gt;Deployment-&gt;Upload 把本地项目部署到服务器上。上传后右键运行，可以看到程序是在服务器上执行的。</p>
+<p>Mac 和 Ubuntu 操作类似。</p>
+<p>（完）</p>
+<p class="migration-source" id="source">本文首次发布于知乎，<a href="https://zhuanlan.zhihu.com/p/266927244">查看知乎原文</a>。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>

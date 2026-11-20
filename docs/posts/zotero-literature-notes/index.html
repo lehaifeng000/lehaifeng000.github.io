@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="一份 2021 年的 Zotero 上手笔记，记录 WebDAV 同步、导入论文和在 Word 插入引用。">
+  <title>Zotero笔记-文献管理 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2021-04-15">2021.04.15</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">效率工具</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">Zotero笔记-文献管理</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#section-1">1. 搜索 Zotero 进官网下载安装</a></li>
+              <li><a href="#section-2">2. 注册 Zotero 账号</a></li>
+              <li><a href="#section-3">3. 登录账号进行同步</a></li>
+              <li><a href="#section-4">4. 安装插件（可选）</a></li>
+              <li><a href="#section-5">5. 导入文献</a></li>
+              <li><a href="#section-6">6. 在 Word 里插入文献引用</a></li>
+              <li><a href="#section-7">其它</a></li>
+              <li><a href="#source">知乎原文</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+<p>Zotero是一款文献管理软件，如果你缺一个用来管理看过的文献或者觉得导出文献引用太麻烦，那么可以试试，或许有惊喜！</p>
+<blockquote>一位老师安利的，折腾了一天终于会用了，真香！</blockquote>
+<p><i>笔记内容以mac为准，windows差异应该不大，Zotero显示语言我换成了英文，过程有截图，也可自行翻译</i></p>
+<p class="post-note">这是 2021 年的界面和插件笔记。部分原截图未迁入博客，涉及 WebDAV 账户和应用密码的画面不转载。旧插件不要直接从不明分享下载。</p>
+<p>用途：管理文献，导出文献引用……</p>
+<h2 id="section-1">1. 搜索 Zotero 进官网下载安装</h2>
+<p>过程略，少年你是一个成熟的researcher了，要学会自己下载安装软件~(难道我会承认我懒得写？)</p>
+<h2 id="section-2">2. 注册 Zotero 账号</h2>
+<p>过程略，少年你是一个成熟的researcher了，要学会自己下载安装软件~</p>
+<p class="figure-source">安装后的界面：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p>第一次进入貌似可能会让安装word插件，记得装上，如果我记错了的话请点击左上角Zotero-&gt;Preferences-&gt;Cite-&gt;Word Processors，里面有个和word相关的插件，点击安装。</p>
+<h2 id="section-3">3. 登录账号进行同步</h2>
+<p><b>3.1（可选）注册一个坚果云的账号当做备份库</b></p>
+<p>步骤：搜索进入坚果云官网，注册账号进行登录，点击右上角的用户名-&gt;账户信息-&gt;安全选项-&gt;添加应用, 应用名填zotero(其它的应该也可以)，完成后会生成一条记录。</p>
+<p>接下来我们回到zotero，点击左上角Zotero-&gt;preferences-&gt;Sync, File Syncing里选WebDAV，把服务器地址、账户、应用密码分别填入。完成后可以验证一下填的对不对。</p>
+<figure class="sync-flow">
+<ol aria-label="WebDAV 同步设置顺序">
+<li>坚果云：创建应用密码</li>
+<li>Zotero：在同步设置选 WebDAV</li>
+<li>填入地址、账号与应用密码</li>
+<li>验证服务器</li>
+</ol>
+<figcaption>WebDAV 设置流程示意，代替会显示账户信息的截图。</figcaption>
+</figure>
+<h2 id="section-4">4. 安装插件（可选）</h2>
+<blockquote>知乎添加附件还得百度云，就不放了，大家自己下载，或者需要的童鞋评论留个邮箱。原文后来补了附件链接，迁移版不转载旧的插件包。</blockquote>
+<p><b>4.1 ZotFile 安装</b></p>
+<p>搜索ZotFile下载xpi文件，Zotero点击顶栏Tools-&gt;Add-ons,点击右上角的设置(齿轮)，选Install Add-on From File，选择下载的xpi文件。安装完重启后再Tools里就能看到ZotFile Preferences，点进去，设置路径，这个路径是用来存pdf的，选好方便找。mac用户可以选iCloud云盘路径。</p>
+<p class="figure-source">ZotFile 设置界面：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p><b>4.2 Better-BibTex for Zotero安装</b></p>
+<p>搜索下载，安装步骤同上。</p>
+<h2 id="section-5">5. 导入文献</h2>
+<p><b>5.1 方法一：直接添加pdf</b></p>
+<p class="figure-source">直接添加 PDF：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p>点击+号，选中Link to File，选择PDF(可多选)，这样就可以直接导入pdf，并且Zotero会自动去找文献相关的信息，这种方法问题比较多，文献信息能不能对取决于pdf找的方法，不太推荐。</p>
+<p><b>5.2 方法二：使用Mendeley找文献，添加文献信息和pdf（这里默认查找外文，国内的去知网就行，相关教程网上很多）</b></p>
+<p>Mendeley 网址：<a href="https://www.mendeley.com/search/">Mendeley Search</a></p>
+<p>输入论文标题查找，找到需要的文章，点击文章名，右侧会弹出文章信息，点击右侧的文章名进入文章界面。</p>
+<p class="figure-source">Mendeley 文献结果：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p>点击右上角的Zotero插件，会自动查找论文的信息和PDF导入到Zotero里。</p>
+<p class="figure-source">用 Zotero 插件导入论文：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p>进入到Zotero即可看到导入的论文。</p>
+<p class="figure-source">导入后的文献记录：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p>这个方法可以找到绝大多数论文的出处，但有个问题是默认所有的文章都是期刊论文，所以之后导出文献的时候会有问题(折腾一天有大半天花在这儿了~)，可以手动修改Item type，再自行修改文章名、删除Accessed、URL、等不需要的东西(可以不删，但导出引用文献的时候会多出好多，不怎么会自定义csl所以选择最省事的方法)。</p>
+<p><b>5.3 方法三：使用 Google / Google Scholar</b></p>
+<p>搜索文献，找到文献。一般是进入对应杂志或期刊的网站，和方法二一样点击右上角的 Zotero 插件导入。这时候会议 paper 会被正常识别。</p>
+<h2 id="section-6">6. 在 Word 里插入文献引用</h2>
+<p>打开 Word 后，工具栏会多一个 Zotero 区域。</p>
+<p class="figure-source">Word 中的 Zotero 工具栏：<a href="https://zhuanlan.zhihu.com/p/365095336">在知乎原文查看截图</a>。</p>
+<p>使用方法：Document Preferences用来调整引用格式；Add/Edit Citation用来添加一个引用，点了会出现一个搜索框，可以搜索到Zotero里添加过的文章；Add/Edit Bibliography 负责生成一个引用目录；Refresh刷新。</p>
+<h2 id="section-7">其它</h2>
+<p>可以创建groups，一个团队加入一个group貌似可以共享(这个省事啊，后面试试再更新~)。</p>
+<blockquote>这里是我的底线</blockquote>
+<p>都看到这里了，点个赞再走呗。</p>
+<p class="migration-source" id="source">本文首次发布于知乎，<a href="https://zhuanlan.zhihu.com/p/365095336">查看知乎原文</a>。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>
