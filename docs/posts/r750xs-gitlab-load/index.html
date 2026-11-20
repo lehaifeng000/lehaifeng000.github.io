@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="双路 Dell R750xs 中高负载下的 GitLab 卡顿排查：实际请求对照、内存换槽和带负载复测。">
+  <title>服务器一到中高负载，GitLab 就卡：一次从应用到内存通道的排查 | 海丰的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">LH</span><span>海丰的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2026-11-20">2026.11.20</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">服务器运维</span><span class="meta-divider" aria-hidden="true"></span><span>海丰</span></p>
+        <h1 id="post-title">服务器一到中高负载，<span class="title-phrase">GitLab 就卡：</span>一次从应用到内存通道的排查</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#load">中高负载下的卡顿</a></li>
+              <li><a href="#diagnosis">自检与换条对照</a></li>
+              <li><a href="#slots">换槽恢复 128 GB</a></li>
+              <li><a href="#verification">带负载复测</a></li>
+              <li><a href="#checklist">排查顺序</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose">
+          <p>我的 GitLab 跑在一台同时承担 FPGA 回归测试的双路 Dell PowerEdge R750xs 上。这台机器轻载时，打开项目页没什么问题；测试任务增多、服务器进入中高负载后，点开项目页经常要等两秒以上，有时连 SSH 都变慢。等负载降下来，访问又恢复了。</p>
+          <p>我想解决的不是「某个编译工具能开几路」，而是：<strong>同一台服务器在跑计算任务时，怎样让 GitLab 还保持正常响应？</strong>这次最后用原来的四根内存换了两个槽位，恢复了 128 GB；重新施加计算负载后，没有复现之前的明显卡顿。</p>
+
+          <h2 id="load">1. 轻载正常，为什么中高负载下会卡？</h2>
+          <p>最初我按 GitLab 自身故障排查，检查了容器健康状态、Puma、数据库和仓库服务。把 GitLab 调整到当时实测更快的 CPU 插槽一侧，网页确实好一些，但负载重新上来时，卡顿还会回来。尤其是网页和 SSH 一起变慢，很难用 Puma 的线程数解释整个现象。</p>
+          <p>后来把复现过程固定下来：<strong>先暂停计算任务测基线，再施加一种负载，最后停掉负载看是否恢复</strong>。每次探测同一个 GitLab 页面，记录 HTTP 状态和实际耗时。纯 CPU 脚本把整机 CPU 占用推到约 40%，没有稳定复现明显卡顿；Vivado 或布局布线这样的实际任务却能复现。</p>
+          <p>所以这里讲的「中高负载」，不是说 CPU 超过某个百分比就会卡。计算任务还会访问缓存、内存和磁盘资源；全机平均 CPU 占用率，也不等于 GitLab 所在的 NUMA 节点还有足够余量。清文件缓存曾带来短时改善，但不等于找到了根因。真正值得继续追的是：实测两侧 NUMA 节点表现不同，而且硬件自检有内存告警。</p>
+
+          <h2 id="diagnosis">2. 自检指向内存，先恢复服务再做对照</h2>
+          <p>这台机器原来是 4 根 32 GB DDR4-3200 ECC RDIMM。iDRAC 的开机自检最初在 A2 记录了 <code>0x52D2</code>，提示重新插紧 DIMM。我先屏蔽 A2、B2，只留 A1、B1，用 64 GB 维持服务。但这样跑正式回归，容量很快就会成问题。</p>
+          <p>接着我在断电后把 A2、B2 的两根内存互换，A1、B1 不动。重启后重新启用两个槽，并等 iDRAC 刷新清单，用序列号确认确实交换了位置。结果不是「A2 不报、B2 报」，而是 <strong>两个槽都出现了新的 <code>0x52D2</code></strong>。开机自检停在 F1 提示，继续启动后系统仍只有 64 GB。</p>
+          <p>这一步没能把故障单独归到某根条或某个槽。排查时也要分清两件事：BIOS 设置里是 <code>Enabled</code>，不代表内存训练通过；iDRAC 记录里有告警，也要核对是不是本次启动新增的。比如此前人为屏蔽时的 <code>0xA103</code>，就不能和这轮的 <code>0x52D2</code> 混在一起判断。</p>
+
+          <h2 id="slots">3. 不换内存条，换槽后恢复了 128 GB</h2>
+          <figure>
+            <a href="../../assets/eda-r750xs-top.png"><img src="../../assets/eda-r750xs-top.png" width="2217" height="1774" loading="lazy" alt="Dell PowerEdge R750xs 俯视图：机头在下方、机尾在上方，标有全部内存槽及换槽前的四根内存"></a>
+            <figcaption>图 1：R750xs 内存槽位示意。图中状态是排查时的 64 GB 临时配置，不是最终插法。后来 A1、B1 不动，将 A2、B2 的条分别移到图中标出的 A3、B3。</figcaption>
+          </figure>
+          <p>下一次正常关机并断开电源后，我仍保留 A1、B1 不动，把当时位于 A2 和 B2 的两根分别移到 A3、B3。开机后核对了三处：</p>
+          <ul>
+            <li><strong>BIOS：</strong>识别到 128 GB，运行在 3200 MT/s。</li>
+            <li><strong>iDRAC：</strong>A1、A3、B1、B3 各 32 GB，序列号证明搬过去的是原来的两根，本次自检没有新增内存或插法告警。</li>
+            <li><strong>Linux：</strong>两个 NUMA 节点各有两根在线内存，系统可见总量约 125.2 GiB；核对时，四根的可纠正和不可纠正 ECC 错误计数都为 0。</li>
+          </ul>
+          <p>同一批内存搬到另一组槽后能用，原 A2/B2 的槽位、对应通道或接触状况更值得优先查。但重新插拔、重新训练和可用容量恢复都发生在这次操作中，不能据此断定原插槽已经损坏，更不能从一次开机判断具体是哪一项造成了之前的响应变慢。</p>
+          <p><strong>这不是 R750xs 的通用插法。</strong>戴尔手册列出的双路四条顺序是 A1、B1、A2、B2，并要求两颗 CPU 的配置匹配。跳过 A2/B2 是这台机器实测可用的临时方案，不保证同型号、不同 BIOS 或不同内存规格的机器也能这样插。参见<a href="https://www.dell.com/support/manuals/en-us/poweredge-r750xs/per750xs_ism_pub/general-memory-module-installation-guidelines?guid=guid-6db30d04-e447-48c6-8748-d6389f356fdb&amp;lang=en-us">戴尔 R750xs 内存安装顺序</a>。</p>
+
+          <h2 id="verification">4. 恢复容量后，再看带负载时的 GitLab</h2>
+          <p>开机没报错只是第一步。为了复测「计算任务和 GitLab 同时工作」的场景，我暂停正式回归，起了 16 路 Vivado，用已布线的 checkpoint 做时序分析和生成 bitstream。测试约两分钟。同一台局域网电脑访问同一个项目首页，结果如下：</p>
+          <ul>
+            <li><strong>空载基线：</strong>9 次请求，中位数 0.115 秒。</li>
+            <li><strong>并发测试期间：</strong>44 次请求，中位数 0.126 秒，最慢 0.334 秒，全都返回 HTTP 200。</li>
+            <li><strong>恢复正式回归后：</strong>调度器曾达到 20 路；随后在实测 17 路时另做 5 次页面探测，最慢 0.189 秒。</li>
+          </ul>
+          <p>这些是页面 HTTP 请求耗时，不含浏览器渲染。16 路是时序分析和码流生成，不是 16 个大型设计同时从综合跑到布线；而且不能把 17 路时的抽测当作 20 路时的性能数据。能确定的是：<strong>在这几次带真实计算负载的观察里，没有再出现原先那种秒级卡顿。</strong></p>
+
+          <h2 id="checklist">遇到类似问题，可以按这个顺序排</h2>
+          <ol>
+            <li>用同一个页面测轻载和带负载的响应，把卡顿与具体时间、并发数和任务类型对上。</li>
+            <li>网页和 SSH 一起慢时，除了查 GitLab，也查宿主机的 CPU 等待、内存压力、磁盘等待和 NUMA 差异。不要用一个全机 CPU 占用率下结论。</li>
+            <li>发现内存告警时，看本次 POST 的事件，记录内存条和槽位；换槽前正常关机、拔电源，换槽后核对 BIOS 容量和 Linux 在线容量。</li>
+            <li>维护结束后，用之前会触发问题的实际工作负载复测。轻载恢复、开机通过和带负载仍流畅，是三个不同的验收条件。</li>
+          </ol>
+          <p>这次真正有效的做法，是把问题分成两部分验证：先确认机器的内存配置恢复正常，再确认计算任务回到服务器上之后 GitLab 仍能响应。前者靠自检日志和在线容量，后者靠实际页面请求。只看其中一项，都很容易过早宣布问题解决了。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 海丰</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>
