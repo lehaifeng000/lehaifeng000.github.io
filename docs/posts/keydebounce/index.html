@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用 KeyDebounce 过滤机械键盘松手后紧接着出现的同键输入，记录 30 毫秒消抖窗口的取舍。">
+  <title>机械键盘按一下却输入两次，我写了个 Windows 消抖工具 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2026-11-23">2026.11.23</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">效率工具</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">机械键盘按一下却输入两次，我写了个 Windows 消抖工具</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#debounce">从松手开始计时</a></li>
+              <li><a href="#windows">在 Windows 上怎么拦截</a></li>
+              <li><a href="#usage">下载和使用</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose">
+          <p>我用的是一把有线连接的 CHERRY MX 8.2 银轴键盘。刚开始用着没什么问题，用了一段时间以后，<code>R</code>、空格和逗号偶尔按一下会出来两次，后来越来越频繁。比如用拼音打「如果今天」，开头明明只按了一次 <code>R</code>，输入法却收到了两个 <code>r</code>。</p>
+          <p>为了继续用这把键盘，我写了个 Windows 小工具 KeyDebounce。它在后台看每个键的按下和松开事件，把松手后紧接着出现的同键输入拦下来。</p>
+
+          <h2 id="debounce">从松手开始计时</h2>
+          <p><strong>第一次按下直接放行。从这次松手开始计时，同一个键在 30 毫秒内又按下，就过滤掉这一次。</strong>比如 <code>R</code> 松开 10 毫秒后又来了一个 <code>R</code>，第二次按下会被拦截，它对应的松开也一起拦截。要是这时按的是 <code>U</code>，就按 <code>U</code> 自己的记录判断。这里的时间是举例，30 毫秒是软件的默认设置。</p>
+          <p>这个起点也照顾到了长按。比如按住空格不松手，Windows 会继续发出空格的按下事件。这些事件沿用第一次按下的处理结果，系统连发照常工作。平时打字也不用先等 30 毫秒再出字，因为判断是在下一次按下来时做的。</p>
+          <p>如果我真的在松手后马上又按了一次同一个键，软件看到的事件和连键是一样的，也可能拦掉。间隔调得越大，越容易把正常的快速连按也过滤掉。</p>
+
+          <h2 id="windows">在 Windows 上怎么拦截</h2>
+          <p>程序用 C# 写，设置窗口用 WinForms。过滤用的是 Windows 的低级键盘钩子 <code>WH_KEYBOARD_LL</code>，可以在键盘事件送到应用之前决定是否放行。所以记事本和输入法可以用同一套规则，也不用为这把键盘安装额外的驱动。 <a href="https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelkeyboardproc">Windows 键盘钩子文档</a></p>
+          <p>代码按虚拟键码保存每个键的状态，记下上一次放行的按键何时松开，以及当前这次按下是放行还是拦截。被拦截的按键松开时，计时仍以原来的松手时间为准。同一个 Windows 登录会话里，接入的其他键盘也会用这套规则。设置窗口里显示的是本次运行中各键的拦截次数，统计只存在内存里。 <a href="https://github.com/lehaifeng000-tools/keydebounce/blob/v1.2.0/KeyDebounce.cs">KeyDebounce 源码</a></p>
+
+          <h2 id="usage">下载和使用</h2>
+          <p>安装包是 <code>KeyDebounceSetup.msi</code>，在 64 位 Windows 11 上验证过。装好后从开始菜单打开，平时也可以双击托盘里的键帽图标进入设置。 <a href="https://github.com/lehaifeng000-tools/keydebounce/releases/latest">GitHub Releases</a></p>
+          <p>用默认的 30 毫秒就可以先试一下。默认只过滤字母、空格、主键区数字和常用标点。找一个常连键的键，在记事本或自己的输入法里照平时的速度打一会儿，再看「拦截次数（按键）」。如果还会连键，可以稍微调大一点。如果正常连按开始漏字，就调小一点。设置里可以在 5 到 120 毫秒之间调整。</p>
+          <p>这个办法适合先对付日常打字时的连键。轴体本身如果有问题，还是要检查或更换。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>
