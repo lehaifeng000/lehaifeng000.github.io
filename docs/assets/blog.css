@@ -53,6 +53,9 @@ img { max-width: 100%; display: block; }
 .post-cover:hover { border-color: var(--link); }
 .post-meta { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; color: var(--muted); font-size: .9rem; }
 .meta-divider { display: block; height: .85rem; width: 1px; background: var(--line); }
+.view-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.site-views { margin-top: .5rem; font-size: .9rem; }
+.post-meta .view-count::before { content: "·"; margin-inline-end: .45rem; }
 .post-category { font-weight: 650; color: var(--accent); }
 .post-entry h3 { font-size: 1.7rem; line-height: 1.45; margin-block: .4rem .6rem; text-wrap: balance; }
 .post-entry h3 a { color: var(--link); text-decoration: none; }

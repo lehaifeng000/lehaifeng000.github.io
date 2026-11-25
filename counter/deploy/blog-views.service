@@ -1,0 +1,20 @@
+[Unit]
+Description=haifeng blog view counter
+After=network.target
+
+[Service]
+DynamicUser=yes
+User=blog-views
+StateDirectory=blog-views
+Environment=BLOG_VIEWS_DATABASE=/var/lib/blog-views/views.sqlite3
+Environment=BLOG_VIEWS_SITE_ROOT=/opt/blog-views/docs
+WorkingDirectory=/opt/blog-views
+ExecStart=/opt/blog-views/.venv/bin/gunicorn --bind 127.0.0.1:8791 --workers 2 "counter.server:create_app()"
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
