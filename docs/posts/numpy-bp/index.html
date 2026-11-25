@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="用 NumPy 手写 784 → 128 → 10 的 MNIST 分类网络，梳理 Softmax、交叉熵、反向传播和有限差分梯度检查。">
-  <title>用 NumPy 手写 BP 神经网络实现 MNIST 分类 | haifeng 的技术博客</title>
+  <meta name="description" content="用 Python 和 NumPy 手写 BP 神经网络。从 MNIST 手写数字分类讲到 Softmax、交叉熵和反向传播，附 XOR 示例和梯度检查。">
+  <title>用 Python 和 NumPy 手写 BP 神经网络做 MNIST 分类 | haifeng 的技术博客</title>
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../../assets/blog.css">
   <script type="module" src="../../assets/views.js"></script>
@@ -17,7 +17,7 @@
     "@type": "BlogPosting",
     "url": "https://lehaifeng000.github.io/posts/numpy-bp/index.html",
     "inLanguage": "zh-CN",
-    "description": "用 NumPy 手写 784 → 128 → 10 的 MNIST 分类网络，梳理 Softmax、交叉熵、反向传播和有限差分梯度检查。",
+    "description": "用 Python 和 NumPy 手写 BP 神经网络。从 MNIST 手写数字分类讲到 Softmax、交叉熵和反向传播，附 XOR 示例和梯度检查。",
     "headline": "用 NumPy 手写一个 BP 神经网络",
     "author": {
       "@type": "Person",
@@ -56,17 +56,17 @@
           <details open>
             <summary>本文目录</summary>
             <ol>
-              <li><a href="#forward">一张图怎样变成 10 个分数</a></li>
-              <li><a href="#backward">损失怎样传回每一层</a></li>
-              <li><a href="#run">先跑一下 XOR</a></li>
+              <li><a href="#forward">前向传播怎样把一张图变成 10 个分数</a></li>
+              <li><a href="#backward">反向传播怎样算出每一层的梯度</a></li>
+              <li><a href="#run">动手跑 XOR 和梯度检查</a></li>
             </ol>
           </details>
         </aside>
         <div class="prose migrated-prose">
-          <p>研一刚入门深度学习的时候，我用 NumPy 写了一个小网络来识别手写数字。前向传播还比较好理解，矩阵相乘过几层就能得到预测。反向传播费一点脑子，最后只算出一个损失，前面几层的每个权重又是怎么知道要改多少的？这里记一下这份代码里的做法。 <a href="https://github.com/lehaifeng000/numpy_net">项目仓库</a></p>
+          <p>研一刚入门深度学习的时候，我用 Python 和 NumPy 写了一个 BP 神经网络，拿 MNIST 学怎么识别手写数字。前向传播还比较好理解，矩阵相乘过几层就能得到预测。反向传播费一点脑子，最后只算出一个损失，前面几层的每个权重又是怎么知道要改多少的？这里记一下这份代码里的做法。想先跑起来，可以直接看<a href="#run">XOR 示例和梯度检查</a>。 <a href="https://github.com/lehaifeng000/numpy_net">NumPy 网络源码</a></p>
           <p class="post-note">这篇按 2021 年完成分类网络的时间归档。文中的运行命令、小数据集和梯度检查来自后来整理的版本。 <a href="https://github.com/lehaifeng000/numpy_net/commit/ed82faa799a7a29924e9db51e361aade2bd4b58a">2021 年的提交</a></p>
 
-          <h2 id="forward">一张图怎样变成 10 个分数</h2>
+          <h2 id="forward">前向传播怎样把一张图变成 10 个分数</h2>
           <p>MNIST 一张图有 28 × 28 个像素。我把它摊成 784 个数，除以 255，再送进网络。第一层把 784 个输入变成 128 个数，过一下 ReLU，把小于 0 的值设为 0。第二层输出 10 个分数，对应数字 0 到 9。</p>
           <p>比如标签是 7，就用 Softmax 把分数变成概率，再看第 7 类的概率。这个概率越大，<code>-log(p[7])</code> 就越小。一批图都这么算，再取平均就得到训练用的损失。代码直接算对数概率，每行先减去最大的分数，这样求指数时更稳定。 <a href="https://github.com/lehaifeng000/numpy_net/blob/master/mynn/activation.py">Softmax 实现</a></p>
 
@@ -87,12 +87,12 @@
             <figcaption>前向算出每个数字的概率，反向从损失出发，依次算出输出层和隐藏层的参数梯度。</figcaption>
           </figure>
 
-          <h2 id="backward">损失怎样传回每一层</h2>
+          <h2 id="backward">反向传播怎样算出每一层的梯度</h2>
           <p>输出层的梯度可以直接用「预测概率减去 one-hot 标签」来算。比如前面那张图是 7，标签向量只有第 7 类是 1。批损失取了平均，所以在这里把梯度除以批大小，后面的层沿着这个梯度继续算。</p>
           <p>全连接层前向算的是 <code>Z = X @ W.T + b</code>。反向拿到 <code>dZ</code> 后，<code>dZ.T @ X</code> 是权重的梯度，沿样本维度加起来是偏置的梯度，<code>dZ @ W</code> 则传给前一层。有 ReLU 的那层先按前向时留下的值做一次筛选，没过 ReLU 的位置梯度就是 0。</p>
           <p>代码里就是一个倒序循环。每层算完自己的梯度，还要返回传给前一层的值。等这些梯度都算完，再用 <code>W -= lr * dW</code> 更新权重。看这两个文件基本就能顺完一趟。 <a href="https://github.com/lehaifeng000/numpy_net/blob/master/mynn/models.py">训练循环</a> · <a href="https://github.com/lehaifeng000/numpy_net/blob/master/mynn/layer.py">全连接层</a></p>
 
-          <h2 id="run">先跑一下 XOR</h2>
+          <h2 id="run">动手跑 XOR 和梯度检查</h2>
           <p>想先看看网络能不能学起来，可以从 XOR 开始。就四条数据，两个输入不同时输出 1。程序会把它们的预测都打印出来。想再核对一步，可以给某个权重加、减一小点，各算一次损失，用差值估算梯度，再和反向传播算出来的值对比。下面几条命令在仓库目录里运行。</p>
           <pre><code>python -m pip install -r requirements.txt
 python main.py --dataset xor
