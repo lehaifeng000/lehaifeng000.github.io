@@ -8,7 +8,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
-from counter.server import ROUTE, WINDOW_MS, ViewsAPI
+from counter.comments import ROUTE as COMMENTS_ROUTE
+from counter.server import ROUTE, WINDOW_MS, BlogAPI
 
 PAGES = Path(__file__).resolve().parents[1] / "docs"
 ORIGIN = "https://lehaifeng000.github.io"
@@ -19,19 +20,19 @@ class ViewCounterTest(unittest.TestCase):
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.database = Path(directory.name) / "views.sqlite3"
-        self.api = ViewsAPI(self.database, PAGES, ORIGIN)
+        self.api = BlogAPI(self.database, PAGES, ORIGIN)
         self.visitor = str(uuid4())
 
-    def request(self, method, page="home", origin=ORIGIN, visitor=None):
+    def request(self, method, page="home", origin=ORIGIN, visitor=None, *, route=ROUTE, payload=None):
         response = {}
-        body = json.dumps({"page": page, "visitor": visitor or self.visitor}).encode()
+        body = json.dumps(payload or {"page": page, "visitor": visitor or self.visitor}).encode()
 
         def start(status, headers):
             response.update(status=status, headers=dict(headers))
 
         payload = self.api({
             "REQUEST_METHOD": method,
-            "PATH_INFO": ROUTE,
+            "PATH_INFO": route,
             "QUERY_STRING": f"page={page}" if method == "GET" else "",
             "HTTP_ORIGIN": origin,
             "CONTENT_LENGTH": str(len(body)),
@@ -55,7 +56,7 @@ class ViewCounterTest(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=8) as pool:
             results = list(pool.map(lambda _: self.request("POST")["data"]["total"], range(24)))
         self.assertEqual(results, [1] * 24)
-        restarted = ViewsAPI(self.database, PAGES, ORIGIN)
+        restarted = BlogAPI(self.database, PAGES, ORIGIN)
         self.assertEqual(restarted.counts.record("home", self.visitor), 1)
         with closing(sqlite3.connect(self.database)) as db:
             keys = db.execute("SELECT visitor FROM recent").fetchall()
@@ -73,6 +74,37 @@ class ViewCounterTest(unittest.TestCase):
         self.assertEqual(self.request("POST", page="posts/numpy-bp")["data"], {"total": 1})
         self.assertEqual(self.request("GET", page="posts/numpy-bp")["data"], {"total": 1})
         self.assertEqual(self.request("GET")["data"], {"total": 0})
+
+
+    def test_guest_comment_and_github_reply(self):
+        page = "posts/keydebounce"
+        guest = {
+            "page": page, "parent_id": None, "kind": "guest", "name": "",
+            "message": "<strong>原样保存</strong>", "submission": str(uuid4()),
+        }
+        first = self.request("POST", page, route=COMMENTS_ROUTE, payload=guest)
+        self.assertEqual(first["status"], "200 OK")
+        self.assertEqual(first["data"]["message"], guest["message"])
+        self.assertEqual(self.request("POST", page, route=COMMENTS_ROUTE, payload=guest), first)
+        reply = {
+            **guest, "parent_id": first["data"]["id"], "kind": "github",
+            "name": "https://github.com/example-user?tab=repositories",
+            "message": "回复测试", "submission": str(uuid4()),
+        }
+        second = self.request("POST", page, route=COMMENTS_ROUTE, payload=reply)
+        self.assertEqual(second["status"], "200 OK")
+        self.assertEqual(second["data"]["name"], "example-user")
+        self.assertEqual(second["data"]["parent_id"], first["data"]["id"])
+        self.assertEqual(
+            self.request("GET", page, route=COMMENTS_ROUTE)["data"],
+            {"comments": [first["data"], second["data"]], "next": None},
+        )
+        wrong_page = {**reply, "page": "posts/numpy-bp"}
+        self.assertEqual(
+            self.request("POST", wrong_page["page"], route=COMMENTS_ROUTE, payload=wrong_page)["status"],
+            "400 Bad Request",
+        )
+        self.assertEqual(self.request("GET", route=COMMENTS_ROUTE)["status"], "404 Not Found")
 
 
 if __name__ == "__main__":

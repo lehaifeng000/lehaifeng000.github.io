@@ -1,9 +1,7 @@
+import { blogUrl, blogFetch } from "./blog-api.js";
+
 (() => {
-  // Set the public HTTPS endpoint when the counter is deployed.
-  const liveEndpoint = "";
-  const preview = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
-  const endpoint = preview ? "/api/blog-views" :
-    location.origin === "https://lehaifeng000.github.io" ? liveEndpoint : "";
+  const endpoint = blogUrl("/api/blog-views");
   const counter = document.querySelector("[data-view-page]");
   if (!endpoint || !counter) return;
 
@@ -32,12 +30,7 @@
 
   async function update() {
     const url = new URL(endpoint, location.origin);
-    const options = {
-      cache: "no-store",
-      credentials: "omit",
-      referrerPolicy: "no-referrer",
-      signal: AbortSignal.timeout?.(8000),
-    };
+    const options = {};
     try {
       const visitor = await browserId();
       if (visitor) {
@@ -49,7 +42,7 @@
         url.searchParams.set("page", page);
       }
 
-      const response = await fetch(url, options);
+      const response = await blogFetch(url, options);
       if (!response.ok) return;
       const result = await response.json();
       if (Number.isSafeInteger(result.total) && result.total >= 0 && result.total >= shown) {

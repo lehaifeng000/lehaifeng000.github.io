@@ -8,11 +8,12 @@ from hashlib import sha256
 from pathlib import Path
 from urllib.parse import parse_qs
 
+from . import comments
+
 ROUTE = "/api/blog-views"
 WINDOW_MS = 30 * 60 * 1000
 MAX_BODY = 512
 ARTICLE = re.compile(r"posts/[a-z0-9][a-z0-9-]{0,63}")
-VISITOR = re.compile(r"[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}")
 
 
 class ViewCounts:
@@ -62,9 +63,10 @@ class ViewCounts:
             return self.total(db, page)
 
 
-class ViewsAPI:
+class BlogAPI:
     def __init__(self, database, pages, origin):
         self.counts = ViewCounts(database)
+        self.comments = comments.CommentStore(self.counts.connect)
         self.pages = pages
         self.origin = origin
 
@@ -78,6 +80,7 @@ class ViewsAPI:
     def __call__(self, env, start):
         origin = env.get("HTTP_ORIGIN", "")
         method = env["REQUEST_METHOD"]
+        route = env["PATH_INFO"]
         headers = [("Cache-Control", "no-store"), ("Vary", "Origin")]
         if origin == self.origin:
             headers.append(("Access-Control-Allow-Origin", self.origin))
@@ -91,7 +94,7 @@ class ViewsAPI:
             start(status, [*headers, *extra, *body_headers])
             return [body]
 
-        if env["PATH_INFO"] != ROUTE:
+        if route not in (ROUTE, comments.ROUTE):
             return respond("404 Not Found")
         if origin != self.origin and (origin or method != "GET"):
             return respond("403 Forbidden")
@@ -103,37 +106,57 @@ class ViewsAPI:
         if method not in {"GET", "POST"}:
             return respond("405 Method Not Allowed", extra=(("Allow", "GET, POST, OPTIONS"),))
 
-        if method == "GET":
+        reading = method == "GET"
+        discussion = route == comments.ROUTE
+        if reading:
             try:
-                params = parse_qs(env.get("QUERY_STRING", ""), max_num_fields=1)
+                query = parse_qs(env.get("QUERY_STRING", ""), max_num_fields=2 if discussion else 1)
             except ValueError:
                 return respond("400 Bad Request")
-            visitor = None
-            page = params.get("page", [""])[0]
+            data = {key: values[0] for key, values in query.items()}
         else:
             if env.get("CONTENT_TYPE", "").split(";")[0] != "application/json":
                 return respond("415 Unsupported Media Type")
             try:
                 size = int(env.get("CONTENT_LENGTH") or "0")
-                if not 0 < size <= MAX_BODY:
+                maximum = comments.MAX_BODY if discussion else MAX_BODY
+                if not 0 < size <= maximum:
                     return respond("400 Bad Request")
                 data = json.loads(env["wsgi.input"].read(size))
             except (ValueError, UnicodeError):
                 return respond("400 Bad Request")
             if not isinstance(data, dict):
                 return respond("400 Bad Request")
-            page, visitor = data.get("page"), data.get("visitor")
-            if not isinstance(visitor, str) or not VISITOR.fullmatch(visitor):
-                return respond("400 Bad Request")
 
-        if not self.known_page(page):
+        page = data.get("page")
+        if not self.known_page(page) or (discussion and page == "home"):
             return respond("404 Not Found")
-        total = self.counts.read(page) if visitor is None else self.counts.record(page, visitor)
-        return respond("200 OK", {"total": total})
+
+        if discussion:
+            if not reading:
+                try:
+                    comment = self.comments.add(page, data)
+                except ValueError:
+                    return respond("400 Bad Request")
+                return respond("200 OK", comment)
+            try:
+                after = int(data.get("after", "0"))
+                if not 0 <= after <= comments.MAX_ID:
+                    return respond("400 Bad Request")
+            except ValueError:
+                return respond("400 Bad Request")
+            return respond("200 OK", self.comments.read(page, after))
+
+        if reading:
+            return respond("200 OK", {"total": self.counts.read(page)})
+        visitor = data.get("visitor")
+        if not isinstance(visitor, str) or not comments.UUID4.fullmatch(visitor):
+            return respond("400 Bad Request")
+        return respond("200 OK", {"total": self.counts.record(page, visitor)})
 
 
 def create_app():
-    return ViewsAPI(
+    return BlogAPI(
         os.environ["BLOG_VIEWS_DATABASE"],
         Path(os.environ["BLOG_VIEWS_SITE_ROOT"]),
         os.environ.get("BLOG_VIEWS_ORIGIN", "https://lehaifeng000.github.io"),

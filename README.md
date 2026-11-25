@@ -2,4 +2,4 @@
 theme: jekyll-theme-minimal
 blog
 
-[博客访问计数](counter/README.md)
+[博客访问计数和评论](counter/README.md)

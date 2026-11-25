@@ -6,7 +6,8 @@ from pathlib import Path
 from socketserver import ThreadingMixIn
 from wsgiref.simple_server import WSGIServer, make_server
 
-from .server import ROUTE, ViewsAPI
+from . import comments
+from .server import ROUTE, BlogAPI
 
 PAGES = Path(__file__).resolve().parents[1] / "docs"
 
@@ -22,10 +23,10 @@ def main():
     args = parser.parse_args()
     host = "127.0.0.1"
     origin = f"http://{host}:{args.port}"
-    api = ViewsAPI(args.database, PAGES, origin)
+    api = BlogAPI(args.database, PAGES, origin)
 
     def preview(env, start):
-        if env["PATH_INFO"] == ROUTE:
+        if env["PATH_INFO"] in (ROUTE, comments.ROUTE):
             return api(env, start)
         path = (PAGES / env["PATH_INFO"].lstrip("/")).resolve()
         if path.is_dir():

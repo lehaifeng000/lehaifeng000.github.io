@@ -120,3 +120,29 @@ img { max-width: 100%; display: block; }
   .prose { font-size: 1rem; }
   .prose h2 { font-size: 1.3rem; }
 }
+
+/* Article discussion */
+.discussion { width: min(100%, 49rem); margin-block: 2.5rem 0; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.discussion-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .65rem; }
+.discussion-heading h2, .discussion-heading h3 { margin: 0; }
+.comment-status { margin: .45rem 0; color: var(--muted); font-size: .9rem; }
+.comment-status:empty { margin: 0; }
+.comment-list, .comment-replies { list-style: none; padding: 0; }
+.comment-replies:not(:empty) { margin-inline-start: .55rem; padding-inline-start: .9rem; border-inline-start: 1px solid var(--line); }
+.comment-entry { padding-block: .8rem; border-bottom: 1px solid var(--line); min-width: 0; }
+.comment-replies .comment-entry:last-child { border-bottom: 0; padding-bottom: 0; }
+.comment-meta { display: flex; flex-wrap: wrap; gap: .4rem .65rem; font-size: .9rem; color: var(--muted); overflow-wrap: anywhere; }
+.comment-message { margin: .3rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-button, .comment-link { font: inherit; cursor: pointer; }
+.comment-button { padding: .38rem .8rem; color: var(--paper); background: var(--link); border: 1px solid var(--link); border-radius: 5px; }
+.comment-button:disabled, .comment-link:disabled { opacity: .65; cursor: wait; }
+.comment-link { padding: 0; border: 0; background: transparent; color: var(--link); text-decoration: underline; text-underline-offset: .22em; }
+.discussion > .comment-link { margin-top: .7rem; }
+.comment-dialog { color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 1.15rem; width: min(32rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); }
+.comment-dialog::backdrop { background: rgb(14 28 24 / .55); }
+.comment-form { display: grid; gap: .85rem; }
+.comment-form > .comment-button { justify-self: end; }
+.comment-identity { margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: .45rem 1rem; }
+.comment-identity legend { font-size: .9rem; color: var(--muted); }
+.comment-form input[type=text], .comment-form textarea { display: block; width: 100%; margin-top: .2rem; padding: .48rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); font: inherit; }
+.comment-form textarea { resize: vertical; }
