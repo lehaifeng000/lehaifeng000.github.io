@@ -3,12 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="研一时用 NumPy 手写 MNIST 分类网络的笔记，从前向传播、交叉熵到逐层反向传播。">
-  <title>用 NumPy 手写一个 BP 神经网络 | haifeng 的技术博客</title>
+  <meta name="description" content="用 NumPy 手写 784 → 128 → 10 的 MNIST 分类网络，梳理 Softmax、交叉熵、反向传播和有限差分梯度检查。">
+  <title>用 NumPy 手写 BP 神经网络实现 MNIST 分类 | haifeng 的技术博客</title>
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../../assets/blog.css">
   <script type="module" src="../../assets/views.js"></script>
   <script type="module" src="../../assets/comments.js"></script>
+  <!-- Search metadata -->
+  <link rel="canonical" href="https://lehaifeng000.github.io/posts/numpy-bp/index.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "url": "https://lehaifeng000.github.io/posts/numpy-bp/index.html",
+    "inLanguage": "zh-CN",
+    "description": "用 NumPy 手写 784 → 128 → 10 的 MNIST 分类网络，梳理 Softmax、交叉熵、反向传播和有限差分梯度检查。",
+    "headline": "用 NumPy 手写一个 BP 神经网络",
+    "author": {
+      "@type": "Person",
+      "name": "haifeng",
+      "url": "https://github.com/lehaifeng000"
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://lehaifeng000.github.io/posts/numpy-bp/index.html"
+    }
+  }
+  </script>
+  <!-- End search metadata -->
 </head>
 <body>
   <a class="skip-link" href="#main">跳到正文</a>
