@@ -26,7 +26,7 @@ def main():
     api = BlogAPI(args.database, PAGES, origin)
 
     def preview(env, start):
-        if env["PATH_INFO"] in (ROUTE, comments.ROUTE):
+        if env["PATH_INFO"] in (ROUTE, comments.ROUTE, comments.INBOX_ROUTE):
             return api(env, start)
         path = (PAGES / env["PATH_INFO"].lstrip("/")).resolve()
         if path.is_dir():

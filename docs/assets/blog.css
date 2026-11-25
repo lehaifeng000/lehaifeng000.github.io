@@ -146,3 +146,14 @@ img { max-width: 100%; display: block; }
 .comment-identity legend { font-size: .9rem; color: var(--muted); }
 .comment-form input[type=text], .comment-form textarea { display: block; width: 100%; margin-top: .2rem; padding: .48rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); font: inherit; }
 .comment-form textarea { resize: vertical; }
+
+.home-replies:not([hidden]) { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .7rem; margin-top: .35rem; font-size: .9rem; }
+.home-replies > .comment-status { margin: 0; }
+.reply-unread { margin-inline-start: .35rem; padding: .08rem .35rem; border-radius: .3rem; background: var(--link); color: var(--paper); font-size: .8em; white-space: nowrap; }
+.reply-inbox .discussion-heading h2 { font-size: 1.25rem; }
+.reply-items details { padding-block: .8rem; border-bottom: 1px solid var(--line); }
+.reply-items summary { color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
+.reply-items details[open] summary { margin-bottom: .5rem; }
+.reply-inbox > .comment-link { margin-top: .75rem; }
+.comment-entry { scroll-margin-top: 1rem; }
+.comment-entry:target { outline: 2px solid var(--link); outline-offset: .2rem; }

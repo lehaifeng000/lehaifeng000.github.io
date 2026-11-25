@@ -1,4 +1,5 @@
 import { blogUrl, blogFetch } from "./blog-api.js";
+import { readVisitor, getVisitor, guestLabel, displayName } from "./comment-visitor.js";
 
 const identityKey = "blog-comment-identity:v1";
 const endpoint = blogUrl("/api/blog-comments");
@@ -28,7 +29,10 @@ function addDiscussion() {
             <label><input name="kind" type="radio" value="guest" checked> 游客</label>
             <label><input name="kind" type="radio" value="github"> GitHub 用户名</label>
           </fieldset>
-          <label data-guest>昵称（可选）<input name="nickname" type="text" maxlength="30"></label>
+          <div data-guest>
+            <label>昵称（可选）<input name="nickname" type="text" maxlength="30"></label>
+            <p class="comment-status" data-guest-label hidden></p>
+          </div>
           <div data-github hidden>
             <label>GitHub 用户名或个人主页链接
               <input name="github" type="text" maxlength="160" autocomplete="username" spellcheck="false" autocapitalize="none">
@@ -59,6 +63,7 @@ function addDiscussion() {
   let parent = null;
   let next = 0;
   let pending = null;
+  let visitorReady;
   restoreIdentity(form);
   showIdentity();
 
@@ -78,7 +83,27 @@ function addDiscussion() {
   });
   more.addEventListener("click", load);
   form.addEventListener("submit", submit);
-  load();
+  if (readVisitor()) identifyGuest();
+  load().then(revealLinkedComment);
+  window.addEventListener("hashchange", revealLinkedComment);
+
+  function identifyGuest() {
+    if (!visitorReady) {
+      visitorReady = getVisitor().then(async visitor => {
+        if (visitor) {
+          const label = await guestLabel(visitor).catch(() => "");
+          if (label) {
+            const guest = form.querySelector("[data-guest-label]");
+            guest.hidden = false;
+            guest.textContent = "你的游客身份 " + label;
+            form.elements.nickname.placeholder = label;
+          }
+        }
+        return visitor;
+      });
+    }
+    return visitorReady;
+  }
 
   function showIdentity() {
     const github = form.elements.kind.value === "github";
@@ -97,6 +122,7 @@ function addDiscussion() {
     replyLabel.hidden = !reply;
     replyLabel.textContent = reply ? "回复 " + displayName(reply) : "";
     setError("");
+    identifyGuest();
     dialog.showModal();
     form.elements.message.focus();
   }
@@ -129,6 +155,34 @@ function addDiscussion() {
     }
   }
 
+  async function revealLinkedComment() {
+    const target = /^#comment-([1-9][0-9]*)$/.exec(location.hash);
+    if (!target) return;
+    const id = Number(target[1]);
+    if (!Number.isSafeInteger(id)) return;
+
+    try {
+      if (!entries.has(id)) {
+        const url = new URL(endpoint);
+        url.searchParams.set("page", page);
+        url.searchParams.set("comment", id);
+        const response = await blogFetch(url);
+        if (!response.ok) {
+          listStatus.textContent = response.status === 404 ? "这条评论已不可用。" : "暂时无法打开这条评论。";
+          return;
+        }
+        const payload = await response.json();
+        for (const comment of payload.comments) entries.set(comment.id, comment);
+        render();
+      }
+      if (location.hash === target[0]) {
+        requestAnimationFrame(() => document.getElementById("comment-" + id)?.scrollIntoView());
+      }
+    } catch {
+      listStatus.textContent = "暂时无法打开这条评论。";
+    }
+  }
+
   async function submit(event) {
     event.preventDefault();
     if (send.disabled) return;
@@ -146,10 +200,11 @@ function addDiscussion() {
     send.textContent = "发送中…";
     setError("");
     try {
+      const visitor = await identifyGuest();
       const response = await blogFetch(endpoint, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({...details, submission: pending.id}),
+        body: JSON.stringify({...details, visitor, submission: pending.id}),
       });
       if (response.status === 400 && kind === "github") {
         setError("请检查 GitHub 用户名或个人主页链接。");
@@ -226,10 +281,6 @@ function make(tag, className, text) {
   if (className) element.className = className;
   if (text) element.textContent = text;
   return element;
-}
-
-function displayName(comment) {
-  return comment.kind === "github" ? "@" + comment.name : comment.name || "游客";
 }
 
 function saveIdentity(kind, name) {

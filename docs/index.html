@@ -8,6 +8,7 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/blog.css">
   <script type="module" src="assets/views.js"></script>
+  <script type="module" src="assets/reply-inbox.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到正文</a>
@@ -25,6 +26,19 @@
     <section class="masthead" aria-labelledby="site-title">
       <h1 id="site-title">haifeng 的技术博客</h1>
       <p class="view-count site-views" data-view-page="home" hidden>主页访问量 <span data-view-total></span></p>
+      <div class="home-replies" data-reply-inbox hidden>
+        <span class="comment-status" data-inbox-guest></span>
+        <button class="comment-link" type="button" data-inbox-open>回复提醒 <span class="reply-unread" data-inbox-badge hidden></span></button>
+        <dialog class="comment-dialog reply-inbox" aria-labelledby="reply-inbox-title">
+          <div class="discussion-heading">
+            <h2 id="reply-inbox-title">回复提醒</h2>
+            <button class="comment-link" type="button" data-inbox-close>关闭</button>
+          </div>
+          <p class="comment-status" data-inbox-status role="status"></p>
+          <div class="reply-items" data-inbox-list></div>
+          <button class="comment-link" type="button" data-inbox-more hidden>加载更多回复</button>
+        </dialog>
+      </div>
     </section>
 
     <div class="blog-grid">

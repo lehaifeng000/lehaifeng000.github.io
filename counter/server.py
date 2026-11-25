@@ -94,7 +94,7 @@ class BlogAPI:
             start(status, [*headers, *extra, *body_headers])
             return [body]
 
-        if route not in (ROUTE, comments.ROUTE):
+        if route not in (ROUTE, comments.ROUTE, comments.INBOX_ROUTE):
             return respond("404 Not Found")
         if origin != self.origin and (origin or method != "GET"):
             return respond("403 Forbidden")
@@ -128,6 +128,13 @@ class BlogAPI:
             if not isinstance(data, dict):
                 return respond("400 Bad Request")
 
+        if route == comments.INBOX_ROUTE:
+            if reading:
+                return respond("405 Method Not Allowed", extra=(("Allow", "POST, OPTIONS"),))
+            try:
+                return respond("200 OK", self.comments.inbox(data))
+            except ValueError:
+                return respond("400 Bad Request")
         page = data.get("page")
         if not self.known_page(page) or (discussion and page == "home"):
             return respond("404 Not Found")
@@ -140,6 +147,12 @@ class BlogAPI:
                     return respond("400 Bad Request")
                 return respond("200 OK", comment)
             try:
+                if "comment" in data:
+                    target = int(data["comment"])
+                    if not 0 < target <= comments.MAX_ID:
+                        return respond("400 Bad Request")
+                    thread = self.comments.linked_comment(page, target)
+                    return respond("200 OK", thread) if thread["comments"] else respond("404 Not Found")
                 after = int(data.get("after", "0"))
                 if not 0 <= after <= comments.MAX_ID:
                     return respond("400 Bad Request")

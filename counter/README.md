@@ -16,8 +16,10 @@ py -3.12 -B -m counter.preview --database "$env:TEMP/haifeng-blog-preview.sqlite
 
 ## 上线
 
-GitHub Pages 发布 `docs/`。计数 API 单独运行，用持久化目录保存数据库，并在 HTTPS 反向代理开放 `/api/blog-views` 和 `/api/blog-comments`。用生产 WSGI 服务器启动 `counter.server:create_app()`。`deploy/` 提供 systemd 服务及 nginx 配置，服务将 Gunicorn 绑定到 `127.0.0.1:8791`。设置 `BLOG_VIEWS_DATABASE` 为服务账户可写目录中的数据库文件，`BLOG_VIEWS_SITE_ROOT` 为发布版本的 `docs` 绝对路径。允许的前端来源默认为 `https://lehaifeng000.github.io`。
+GitHub Pages 发布 `docs/`。计数 API 单独运行，用持久化目录保存数据库，并在 HTTPS 反向代理开放 `/api/blog-views`、`/api/blog-comments` 和 `/api/blog-replies`。用生产 WSGI 服务器启动 `counter.server:create_app()`。`deploy/` 提供 systemd 服务及 nginx 配置，服务将 Gunicorn 绑定到 `127.0.0.1:8791`。设置 `BLOG_VIEWS_DATABASE` 为服务账户可写目录中的数据库文件，`BLOG_VIEWS_SITE_ROOT` 为发布版本的 `docs` 绝对路径。允许的前端来源默认为 `https://lehaifeng000.github.io`。
 
 反代对该接口限制频率和请求大小，关闭访问日志，保留 `Origin` 并剥离转发给计数服务的访客 IP、Cookie 和 Referer。接入后，用线上博客来源核对预检、GET 和重复 POST。确认通过后，将 HTTPS 来源（域名或 IP，不含路径）填入 `docs/assets/blog-api.js` 的 `liveOrigin`，再发布博客。只读查询用 `GET /api/blog-views?page=home`，其他页面的键例如 `posts/numpy-bp`。
 
 评论只在文章页开放。游客可直接发送，也可以填 GitHub 用户名或粘贴个人主页链接。名称是访客自行填写的身份标签。每条评论可直接回复，评论和计数共用 SQLite 文件。
+
+浏览器保存一份用于评论和回复提醒的随机身份。未填昵称时，显示由该身份生成的游客编号。服务端按该身份的哈希登记评论和收件人，不存原始凭证。主页用 POST 请求读取个人回复或标记已读，凭证放在请求正文中。

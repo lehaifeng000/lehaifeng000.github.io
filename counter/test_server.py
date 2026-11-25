@@ -6,8 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from uuid import uuid4
 
+from counter.comments import INBOX_ROUTE
 from counter.comments import ROUTE as COMMENTS_ROUTE
 from counter.server import ROUTE, WINDOW_MS, BlogAPI
 
@@ -23,7 +25,7 @@ class ViewCounterTest(unittest.TestCase):
         self.api = BlogAPI(self.database, PAGES, ORIGIN)
         self.visitor = str(uuid4())
 
-    def request(self, method, page="home", origin=ORIGIN, visitor=None, *, route=ROUTE, payload=None):
+    def request(self, method, page="home", origin=ORIGIN, visitor=None, *, route=ROUTE, payload=None, query=""):
         response = {}
         body = json.dumps(payload or {"page": page, "visitor": visitor or self.visitor}).encode()
 
@@ -33,7 +35,7 @@ class ViewCounterTest(unittest.TestCase):
         payload = self.api({
             "REQUEST_METHOD": method,
             "PATH_INFO": route,
-            "QUERY_STRING": f"page={page}" if method == "GET" else "",
+            "QUERY_STRING": "&".join(filter(None, (f"page={page}", query))) if method == "GET" else "",
             "HTTP_ORIGIN": origin,
             "CONTENT_LENGTH": str(len(body)),
             "CONTENT_TYPE": "application/json",
@@ -105,6 +107,50 @@ class ViewCounterTest(unittest.TestCase):
             "400 Bad Request",
         )
         self.assertEqual(self.request("GET", route=COMMENTS_ROUTE)["status"], "404 Not Found")
+
+
+    def test_inbox_only_notifies_the_visitor_who_wrote_the_parent(self):
+        page = "posts/keydebounce"
+        visitor, other, outsider = (str(uuid4()) for _ in range(3))
+
+        def submit(token, parent_id=None):
+            data = {
+                "page": page, "parent_id": parent_id, "kind": "guest", "name": "",
+                "message": "测试", "submission": str(uuid4()), "visitor": token,
+            }
+            reply = self.request("POST", page, route=COMMENTS_ROUTE, payload=data)
+            self.assertEqual(reply["status"], "200 OK")
+            return reply["data"]
+
+        def inbox(token, **details):
+            return self.request(
+                "POST", route=INBOX_ROUTE, payload={"visitor": token, **details},
+            )["data"]
+
+        root = submit(visitor)
+        self.assertRegex(root["name"], r"^游客[0-9A-F]{8}$")
+        self_reply = submit(visitor, root["id"])
+        self.assertEqual(self_reply["name"], root["name"])
+        self.assertEqual(inbox(visitor)["unread"], 0)
+
+        reply = submit(other, root["id"])
+        self.assertNotEqual(reply["name"], root["name"])
+        received = inbox(visitor)
+        self.assertEqual(received["unread"], 1)
+        self.assertEqual(received["replies"], [{**reply, "page": page, "seen": False}])
+        self.assertEqual(inbox(outsider), {"replies": [], "unread": 0, "next": None})
+        self.assertEqual(inbox(outsider, read=reply["id"]), {"unread": 0})
+        self.assertEqual(inbox(visitor)["unread"], 1)
+        self.assertEqual(inbox(visitor, read=reply["id"]), {"unread": 0})
+        self.assertTrue(inbox(visitor)["replies"][0]["seen"])
+
+        with patch("counter.comments.PAGE_SIZE", 1):
+            first_page = self.request("GET", page, route=COMMENTS_ROUTE)["data"]
+        self.assertEqual(first_page["comments"], [root])
+        link = self.request("GET", page, route=COMMENTS_ROUTE, query=f"comment={reply['id']}")
+        self.assertEqual(link["data"]["comments"], [root, reply])
+        elsewhere = self.request("GET", "posts/numpy-bp", route=COMMENTS_ROUTE, query=f"comment={reply['id']}")
+        self.assertEqual(elsewhere["status"], "404 Not Found")
 
 
 if __name__ == "__main__":
