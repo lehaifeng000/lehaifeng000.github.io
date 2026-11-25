@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用 TP-LINK TL-XVR3000G 按目的 IPv4 地址选 WAN，记录双 WAN 的接线、策略规则和验证方法。">
+  <title>用双 WAN 路由器把内网和上网分开 | haifeng 的技术博客</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../assets/blog.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="site-mark" href="../../index.html"><span class="monogram" aria-hidden="true">HF</span><span>haifeng 的技术博客</span></a>
+      <nav aria-label="站点导航">
+        <a href="../../index.html#posts">文章</a>
+        <a href="https://github.com/lehaifeng000">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    <article aria-labelledby="post-title">
+      <header class="post-top">
+        <a class="breadcrumb" href="../../index.html#posts">返回文章列表</a>
+        <p class="post-meta"><time datetime="2026-11-24">2026.11.24</time><span class="meta-divider" aria-hidden="true"></span><span class="post-category">网络与运维</span><span class="meta-divider" aria-hidden="true"></span><span>haifeng</span></p>
+        <h1 id="post-title">用双 WAN 路由器把内网和上网分开</h1>
+      </header>
+      <div class="reading-grid">
+        <aside class="toc" aria-label="本文导航">
+          <details open>
+            <summary>本文目录</summary>
+            <ol>
+              <li><a href="#hardware">为什么要分流</a></li>
+              <li><a href="#rules">接线和配置</a></li>
+              <li><a href="#verify">怎么验证两个出口</a></li>
+            </ol>
+          </details>
+        </aside>
+        <div class="prose migrated-prose">
+          <h2 id="hardware">为什么要分流</h2>
+          <p>我手上有两条网，一条能连内网服务器，另一条用来上网。电脑平时用 Wi-Fi，我想让它只连一个 Wi-Fi，SSH 到指定的四个内网地址时走内网线，平时开网页、下载就走普通宽带。两边都有有线接入，我就买了台 TP-LINK TL-XVR3000G 易展版，把选路这件事放到路由器上做。</p>
+          <p>挑路由器的时候我先看有没有两个 WAN 口，还专门确认了原厂后台能不能按<strong>目的 IP</strong>指定出口。产品页写着「双 WAN」时，还要看有没有「策略路由」这一项。带宽均衡能利用两条线路，我这里需要的是某些 IP 固定走其中一条。XVR3000G 的原厂固件就能直接配。 <a href="https://www.tp-link.com.cn/product_2263.html?v=specification">型号规格</a></p>
+          <h2 id="rules">接线和配置</h2>
+          <p>后台在「基本设置 → 接口模式」选双 WAN。内网插 <strong>WAN1</strong>，普通宽带插 <strong>WAN2</strong>，在「WAN 设置」里分别填各自的上联参数。路由器给电脑分配的 LAN 网段要和两条 WAN 的接入网段错开。例如 LAN 可以用 <code>192.168.50.0/24</code>。 <a href="https://www.tp-link.com.cn/product_2263.html?v=download">安装手册</a></p>
+
+          <p>我先在「地址管理」建一个内网地址组，只加实际要访问的四个地址。下面用 <code>10.42.8.10</code> 到 <code>10.42.8.13</code> 举例。然后到「高级功能 → 路由设置 → 策略路由」，按顺序加下面两条。我把两条的源地址都设为「所有地址段」。 <a href="https://security.tp-link.com.cn/service/detail_article_3819.html">普联配置示例</a></p>
+          <div class="table-scroll" role="region" tabindex="0" aria-label="策略路由规则顺序">
+            <table style="min-width: 0">
+              <thead>
+                <tr><th scope="col">顺序</th><th scope="col">目的地址</th><th scope="col">出接口</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">1 · 内网</th><td>内网地址组</td><td>WAN1</td></tr>
+                <tr><th scope="row">2 · 上网</th><td>所有地址段</td><td>WAN2</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>两条都启用，服务类型选 <code>ALL</code>，时间选全天，再勾选「强制」。<strong>内网那条一定放在前面。</strong>路由器从上往下匹配，先处理四个具体地址，剩下的再走 WAN2。 <a href="https://security.tp-link.com.cn/service/detail_article_3819.html">规则优先级说明</a></p>
+
+          <h2 id="verify">怎么验证两个出口</h2>
+          <p>电脑一直连着新路由器的 Wi-Fi，先用 SSH 实际登录内网服务器，再打开一个普通网站。Windows 上也可以用下面两条命令，一条测 SSH 端口，一条看公网目标的前几跳。把示例 IP 换成自己的内网服务器地址。 <a href="https://learn.microsoft.com/zh-cn/windows-server/administration/windows-commands/tracert">Windows tracert 文档</a></p>
+          <pre><code>Test-NetConnection 10.42.8.11 -Port 22
+tracert -4 -d -h 3 www.baidu.com</code></pre>
+          <p>登录后在服务器上执行 <code>printenv SSH_CONNECTION</code>，第一项就是服务器看到的客户端地址。实测时，两台内网服务器都能登录，看到的来源都是 WAN1 的内网侧地址。到百度的 IPv4 路径第一跳是新路由器，第二跳和后台的 WAN2 网关对得上。这样，同一台电脑只连一个 Wi-Fi，就能 SSH 到内网，也能从普通宽带上网。</p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-row"><span>© 2026 haifeng</span><a href="../../index.html#posts">返回文章列表</a></div>
+  </footer>
+</body>
+</html>
