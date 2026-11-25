@@ -69,7 +69,19 @@
           <h2 id="rules">接线和配置</h2>
           <p>后台在「基本设置 → 接口模式」选双 WAN。内网插 <strong>WAN1</strong>，普通宽带插 <strong>WAN2</strong>，在「WAN 设置」里分别填各自的上联参数。路由器给电脑分配的 LAN 网段要和两条 WAN 的接入网段错开。例如 LAN 可以用 <code>192.168.50.0/24</code>。 <a href="https://www.tp-link.com.cn/product_2263.html?v=download">安装手册</a></p>
 
-          <p>我先在「地址管理」建一个内网地址组，只加实际要访问的四个地址。下面用 <code>10.42.8.10</code> 到 <code>10.42.8.13</code> 举例。然后到「高级功能 → 路由设置 → 策略路由」，按顺序加下面两条。我把两条的源地址都设为「所有地址段」。 <a href="https://security.tp-link.com.cn/service/detail_article_3819.html">普联配置示例</a></p>
+          <h3>先把四个内网地址放到一组</h3>
+          <p>点「行为管控 → 地址管理 → 新增」，在 IP 地址列表里逐个填入要访问的服务器地址。下面用 <code>10.42.8.10</code> 到 <code>10.42.8.13</code> 举例，再把这四项加进名为 <code>neiwang</code> 的地址组。图里的 <code>LAN</code> 一行是路由器下发给电脑的网段，和服务器地址组分开放。 <a href="https://security.tp-link.com.cn/service/detail_article_3819.html">普联配置示例</a></p>
+          <figure>
+            <a href="address-management.png"><img src="address-management.png" width="1764" height="892" loading="lazy" decoding="async" alt="地址管理截图。箭头依次指向行为管控、地址管理和新增。列表显示 LAN 192.168.50.0/24 和 10.42.8.10 到 10.42.8.13 四条服务器地址。"></a>
+            <figcaption>图 1 · 按 ① 到 ③ 打开新增。截图已标注，图中 IP 为示例。点击图片可放大。</figcaption>
+          </figure>
+
+          <h3>再按顺序加两条策略路由</h3>
+          <p>点「高级功能 → 路由设置 → 策略路由 → 新增」。两条规则的源地址都选「所有地址段」。第一条的目的地址选刚建好的 <code>neiwang</code>，出口选 WAN1。保存后再点一次「新增」，按下表配置 WAN2。</p>
+          <figure>
+            <a href="policy-routing.png"><img src="policy-routing.png" width="2119" height="742" loading="lazy" decoding="async" alt="策略路由截图。箭头依次指向高级功能、路由设置、策略路由和新增。规则列表中 neiwang 经 WAN1 排第一，所有地址经 WAN2 排第二。"></a>
+            <figcaption>图 2 · 按 ① 到 ④ 打开规则编辑。保存后对照表格核对出口和顺序。点击图片可放大。</figcaption>
+          </figure>
           <div class="table-scroll" role="region" tabindex="0" aria-label="策略路由规则顺序">
             <table style="min-width: 0">
               <thead>

@@ -70,6 +70,23 @@
           <p>MNIST 一张图有 28 × 28 个像素。我把它摊成 784 个数，除以 255，再送进网络。第一层把 784 个输入变成 128 个数，过一下 ReLU，把小于 0 的值设为 0。第二层输出 10 个分数，对应数字 0 到 9。</p>
           <p>比如标签是 7，就用 Softmax 把分数变成概率，再看第 7 类的概率。这个概率越大，<code>-log(p[7])</code> 就越小。一批图都这么算，再取平均就得到训练用的损失。代码直接算对数概率，每行先减去最大的分数，这样求指数时更稳定。 <a href="https://github.com/lehaifeng000/numpy_net/blob/master/mynn/activation.py">Softmax 实现</a></p>
 
+          <figure class="training-flow">
+            <div class="training-flow-row">
+              <strong>前向</strong>
+              <span>784 个像素值</span><span aria-hidden="true">→</span>
+              <span>128 个隐藏单元 + ReLU</span><span aria-hidden="true">→</span>
+              <span>10 个类别分数</span><span aria-hidden="true">→</span>
+              <span>Softmax 概率</span>
+            </div>
+            <div class="training-flow-row">
+              <strong>反向</strong>
+              <span>交叉熵损失</span><span aria-hidden="true">→</span>
+              <span>输出层梯度</span><span aria-hidden="true">→</span>
+              <span>隐藏层梯度</span>
+            </div>
+            <figcaption>前向算出每个数字的概率，反向从损失出发，依次算出输出层和隐藏层的参数梯度。</figcaption>
+          </figure>
+
           <h2 id="backward">损失怎样传回每一层</h2>
           <p>输出层的梯度可以直接用「预测概率减去 one-hot 标签」来算。比如前面那张图是 7，标签向量只有第 7 类是 1。批损失取了平均，所以在这里把梯度除以批大小，后面的层沿着这个梯度继续算。</p>
           <p>全连接层前向算的是 <code>Z = X @ W.T + b</code>。反向拿到 <code>dZ</code> 后，<code>dZ.T @ X</code> 是权重的梯度，沿样本维度加起来是偏置的梯度，<code>dZ @ W</code> 则传给前一层。有 ReLU 的那层先按前向时留下的值做一次筛选，没过 ReLU 的位置梯度就是 0。</p>
