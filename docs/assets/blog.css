@@ -35,6 +35,24 @@ img { max-width: 100%; display: block; }
 .home { min-height: calc(100svh - 11.3rem); }
 .masthead { padding-block: 2.7rem 1.45rem; }
 .masthead h1 { font-size: 2.7rem; line-height: 1.25; }
+.github-profile {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .1rem .65rem;
+  min-height: 2.75rem;
+  max-width: 100%;
+  margin-top: .8rem;
+  padding: .35rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: .9rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.github-profile:hover { border-color: var(--link); }
+.github-handle { color: var(--muted); font-weight: 400; }
 .blog-grid { display: grid; align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 15.5rem); gap: 3.25rem; padding-top: .15rem; }
 .section-heading { padding-block: .58rem .65rem; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); font-size: 1.2rem; }
 .blog-sidebar { display: grid; gap: 1.65rem; }
